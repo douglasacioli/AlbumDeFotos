@@ -1,0 +1,119 @@
+﻿@model AlbumDeFotos.Models.MapaLeitoStatusViewModel
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+<script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+
+<div class="bg-lightGray border-bottom mb-10 row">
+    <div class="cell-md-8 d-flex flex-align-baseline">
+        <div class="p-7">
+            <h1>Mapa de Leitos - @Model.Andar</h1>
+        </div>
+    </div>
+</div>
+
+<div id="mapaAndar" style="height: 600px; width: 100%; margin-top: 20px;"></div>
+
+<!-- Div para exibir coordenadas em tempo real -->
+<div id="coordenadasDisplay" style="margin-top: 20px; font-family: Arial, sans-serif;">
+    <strong>Coordenadas em Tempo Real:</strong>
+    <span id="coordenadasText">Nenhuma coordenada ainda.</span>
+</div>
+
+<script>
+    let map;
+    document.addEventListener("DOMContentLoaded", function() {
+        // Inicializa o mapa Leaflet
+        map = L.map('mapaAndar', {
+            minZoom: -2,
+            maxZoom: 2,
+            crs: L.CRS.Simple
+        });
+
+        var bounds = [[0, 0], [1102, 1600]];
+        L.imageOverlay('@Model.ImagemAndar', bounds).addTo(map);
+        map.fitBounds(bounds);
+
+        // Inicializa o controle de desenho no mapa
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            draw: false, // Desativa a criação de novos retângulos, permitindo apenas edição
+            edit: {
+                featureGroup: drawnItems,
+                remove: true
+            }
+        });
+        map.addControl(drawControl);
+
+        // Adiciona as unidades funcionais como áreas retangulares
+    @foreach (var unidade in Model.UnidadesFuncionais)
+    {
+        <text>
+                    var boundsUnidade = [[@unidade.CoordenadaYInicio, @unidade.CoordenadaXInicio], [@unidade.CoordenadaYFim, @unidade.CoordenadaXFim]];
+
+                    var unidadeLayer = L.rectangle(boundsUnidade, {
+                        color: "#ff7800",
+                        weight: 1,
+                        fillOpacity: 0.3
+                    }).addTo(map).bindPopup('<b>@unidade.Nome</b><br>Status: @unidade.Status');
+
+                    drawnItems.addLayer(unidadeLayer);
+        </text>
+    }
+
+        // Evento quando um retângulo existente é editado
+        map.on(L.Draw.Event.EDITSTART, function(event) {
+            var layers = drawnItems.getLayers();
+            layers.forEach(function(layer) {
+                // Adiciona o evento de mousemove durante a edição para atualizar as coordenadas em tempo real
+                layer.on('mousemove', function(e) {
+                    var bounds = layer.getBounds();
+                    atualizarCoordenadasEmTempoReal(bounds);
+                });
+            });
+        });
+
+        map.on(L.Draw.Event.EDITED, function(event) {
+            var layers = event.layers;
+            layers.eachLayer(function(layer) {
+                var bounds = layer.getBounds();
+                console.log("Retângulo editado: ", bounds);
+                atualizarCoordenadasEmTempoReal(bounds); // Atualiza as coordenadas ao finalizar a edição
+                salvarCoordenadas(layer, bounds);
+            });
+        });
+
+        // Função para salvar coordenadas (pode ser adaptada para fazer uma requisição AJAX)
+        function salvarCoordenadas(layer, bounds) {
+            var coordenadas = {
+                xInicio: bounds.getWest(),
+                yInicio: bounds.getSouth(),
+                xFim: bounds.getEast(),
+                yFim: bounds.getNorth()
+            };
+            console.log('Novas coordenadas salvas:', coordenadas);
+
+            // Código para enviar coordenadas para o servidor
+            // $.ajax({
+            //     url: '/MapaLeitos/SalvarCoordenadas',
+            //     type: 'POST',
+            //     data: coordenadas,
+            //     success: function(response) {
+            //         console.log('Coordenadas salvas com sucesso!');
+            //     },
+            //     error: function() {
+            //         console.log('Erro ao salvar as coordenadas.');
+            //     }
+            // });
+        }
+
+        // Função para exibir as coordenadas em tempo real
+        function atualizarCoordenadasEmTempoReal(bounds) {
+            var coordenadasText = `X Início: ${bounds.getWest().toFixed(2)}, Y Início: ${bounds.getSouth().toFixed(2)}, X Fim: ${bounds.getEast().toFixed(2)}, Y Fim: ${bounds.getNorth().toFixed(2)}`;
+            document.getElementById("coordenadasText").innerText = coordenadasText;
+        }
+    });
+</script>

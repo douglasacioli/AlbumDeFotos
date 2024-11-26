@@ -1,0 +1,66 @@
+﻿@model AlbumDeFotos.Models.Album
+
+@{
+    ViewData["Title"] = "Detalhes do album";
+}
+
+<p>Album ID: @Model.AlbumId</p>
+
+<div class="album">
+    <div class="foto">
+        <div class="container">
+            <div class="texto">
+                <h2 class="white-text">@Html.DisplayFor(model => model.Destino)</h2>
+                <h5 class="white-text">
+                    @Model.Inicio.ToString("dd/MM/yyyy") a @Model.Fim.ToString("dd/MM/yyyy")
+                </h5>
+                @* <h5 class="white-text">@Html.DisplayFor(model => model.Inicio) a @Html.DisplayFor(model => model.Fim)</h5> *@
+            </div>
+        </div>
+    </div>
+    <div>
+        <hr/>
+        <h5 class="center">Fotos de (o) @Model.Destino</h5>
+        <hr/>
+        <div class="linkImagem hide">@Model.FotoTopo</div>
+    </div>
+
+    <div class="botoes">
+        @* <a href="@Url.Action("Create", "Imagens", new { id = Model.AlbumId })" class="btn-small">Nova Foto</a> *@
+        <a href="/Imagens/Create?id=@Model.AlbumId" class="btn-small">Nova Foto</a>
+
+        <a asp-action="Index" class="btn-small grey darken-3">Voltar</a>
+    </div>
+
+</div>
+
+@await Component.InvokeAsync("Imagem", new { id = Model.AlbumId })
+
+
+@section Scripts{
+    <script>
+        var linkImagem = $(".linkImagem").text().trim();
+        if (linkImagem) {
+            var url = "/" + linkImagem;
+            console.log("Imagem carregada:", url);
+        } else {
+            console.warn("Nenhuma URL encontrada em .linkImagem.");
+        }
+
+
+        $(document).ready(function(){
+            var fotoTopo = "@Url.Content(Model.FotoTopo)";
+            if (fotoTopo) {
+                $(".foto").css("background-image", `url('${fotoTopo}')`);
+            } else {
+                console.warn("Nenhuma imagem definida para FotoTopo.");
+            }
+        });
+
+
+
+    </script>
+}
+
+
+        
